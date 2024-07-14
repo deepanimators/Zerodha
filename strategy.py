@@ -11,7 +11,7 @@ import os
 import pandas as pd
 import time
 import traceback
-from utils import notify, buy_nearest_option, sell_option, update_positions, get_initial_price, getTickSize
+from utils import notify, buy_nearest_option, sell_option, update_positions
 from access_token import autologin
 import sys
 
@@ -30,9 +30,11 @@ excel_file_prerequisite = 'prerequisite.xlsx'
 prerequisite_df = pd.read_excel(excel_file_prerequisite)
 
 tickers = prerequisite_df['Tickers'].tolist()
-LOT_SIZE = prerequisite_df['Lotsize'].iloc[0]
+LOT_SIZE = prerequisite_df['LotSize'].iloc[0]
 n_shares = prerequisite_df['nShares'].iloc[0]
 capital = prerequisite_df['Capital'].iloc[0]
+# Update to the correct expiry date
+ticker_expiry_val = prerequisite_df['Expiry'].iloc[0]
 
 quantity = int(n_shares * LOT_SIZE)  # Ensure quantity is an integer
 
@@ -53,14 +55,12 @@ fixed_levels_df = pd.read_excel(excel_file)
 fixed_levels = fixed_levels_df['Levels'].tolist()
 
 
-def main(ticker, initial_price):
-
+def main(ticker, initial_price, ticker_expiry):
     print("\n**************************************************************")
     print("starting passthrough for {} at {}".format(ticker, time.asctime(time.localtime(time.time()))))
 
     try:
         ltp = kite.ltp(NSE_NFO + ':' + ticker)[NSE_NFO + ':' + ticker]['last_price']
-        tick_size = getTickSize(instrument_df, ticker)
 
         print("Current Price - ", ltp)
         print("Initial Price - ", initial_price)
@@ -69,27 +69,27 @@ def main(ticker, initial_price):
         for i, level in enumerate(fixed_levels):
             if i % 2 == 0:  # Even-numbered levels (entry values)
                 if initial_price > level and ltp >= level:
-                        # Entry condition for selling put
-                        sell_option(kite, ticker, quantity, exchange_type, product_type, option_type='PE')
-                        # Set target and stop loss with odd numbered values
-                        target = next((x for x in fixed_levels if x > level and x % 2 != 0), level + 1)
-                        stop_loss = next((x for x in fixed_levels if x < level and x % 2 != 0), level - 1)
-                        # Purchase nearest Rs. 10 call
-                        buy_nearest_option(kite, ticker, ltp, quantity, exchange_type, product_type, option_type='CE',
-                                           target=target, stop_loss=stop_loss)
-                        update_positions(kite,ticker)
-                        break
+                    # Entry condition for selling put
+                    sell_option(kite, ticker, quantity, exchange_type, product_type, ticker_expiry, option_type='PE')
+                    # Set target and stop loss with odd numbered values
+                    target = next((x for x in fixed_levels if x > level and x % 2 != 0), level + 1)
+                    stop_loss = next((x for x in fixed_levels if x < level and x % 2 != 0), level - 1)
+                    # Purchase nearest Rs. 10 call
+                    buy_nearest_option(kite, ticker, ltp, quantity, exchange_type, product_type, ticker_expiry,
+                                       option_type='CE', target=target, stop_loss=stop_loss)
+                    update_positions(kite, ticker)
+                    break
                 elif initial_price < level and ltp <= level:
-                        # Entry condition for selling call
-                        sell_option(kite, ticker, quantity, exchange_type, product_type, option_type='CE')
-                        # Set target and stop loss
-                        target = next((x for x in fixed_levels if x < level and x % 2 != 0), level - 1)
-                        stop_loss = next((x for x in fixed_levels if x > level and x % 2 != 0), level + 1)
-                        # Purchase nearest Rs. 10 put
-                        buy_nearest_option(kite, ticker, ltp, quantity, exchange_type, product_type, option_type='PE',
-                                           target=target, stop_loss=stop_loss)
-                        update_positions(ticker)
-                        break
+                    # Entry condition for selling call
+                    sell_option(kite, ticker, quantity, exchange_type, product_type, ticker_expiry, option_type='CE')
+                    # Set target and stop loss
+                    target = next((x for x in fixed_levels if x < level and x % 2 != 0), level - 1)
+                    stop_loss = next((x for x in fixed_levels if x > level and x % 2 != 0), level + 1)
+                    # Purchase nearest Rs. 10 put
+                    buy_nearest_option(kite, ticker, ltp, quantity, exchange_type, product_type, ticker_expiry,
+                                       option_type='PE', target=target, stop_loss=stop_loss)
+                    update_positions(kite, ticker)
+                    break
 
     except Exception:
         notify(error=True)
@@ -100,17 +100,15 @@ def main(ticker, initial_price):
 start_time = time.time()
 timeout = time.time() + 60 * 60 * 6  # 60 seconds times 360 meaning 6 hrs
 
-
 initial_prices = {}
-for ticker in tickers:
-    initial_prices[ticker] = kite.ltp(NSE_NFO + ':' + ticker)[NSE_NFO + ':' + ticker]['last_price']
-
+for _ticker in tickers:
+    initial_prices[_ticker] = kite.ltp(NSE_NFO + ':' + _ticker)[NSE_NFO + ':' + _ticker]['last_price']
 
 while time.time() <= timeout:
     try:
-        for ticker in tickers:
-            main(ticker, initial_prices[ticker])
-            # Check the price every 3 minutes 
+        for _ticker in tickers:
+            main(_ticker, initial_prices[_ticker], ticker_expiry_val)
+            # Check the price every 3 minutes
         print("Sleeping for ", max(0, int(180 - ((time.time() - start_time) % 180))))
         time.sleep(max(0, int(180 - ((time.time() - start_time) % 180))))
     except KeyboardInterrupt:

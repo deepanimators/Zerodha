@@ -7,7 +7,6 @@ File Name: utils.py
 """
 
 import traceback
-import pandas as pd
 import time
 from termcolor import colored
 
@@ -32,34 +31,35 @@ def placeMarketOrder(kite, symbol, buy_sell, quantity, exchange, product_type):
                      order_type=kite.ORDER_TYPE_MARKET, product=product_type, variety=kite.VARIETY_REGULAR)
 
 
-def sell_option(kite, ticker, quantity, exchange, product_type, option_type):
+def sell_option(kite, ticker, quantity, exchange, product_type, ticker_expiry, option_type):
     # Construct the option symbol
     strike_price = 16000  # Example strike price; modify based on your logic
-    option_ticker = construct_option_symbol(ticker, strike_price, option_type)
+    option_ticker = construct_option_symbol(ticker, strike_price, option_type, ticker_expiry)
     placeMarketOrder(kite, option_ticker, "sell", quantity, exchange, product_type)
 
 
-def buy_nearest_option(kite, ticker, ltp, quantity, exchange, product_type, option_type, target, stop_loss):
+def buy_nearest_option(kite, ticker, ltp, quantity, exchange, product_type, ticker_expiry, option_type, target,
+                       stop_loss):
     # Construct the nearest option symbol
-    nearest_option_ticker = construct_nearest_option_symbol(ticker, ltp, option_type)
+    nearest_option_ticker = construct_nearest_option_symbol(ticker, ltp, option_type, ticker_expiry)
     placeMarketOrder(kite, nearest_option_ticker, "buy", quantity, exchange, product_type)
     print(f"Bought {nearest_option_ticker} with target {target} and stop loss {stop_loss}")
 
 
-def construct_option_symbol(ticker, strike_price, option_type):
-    expiry = "24JUL2024"  # Update to the correct expiry date
+def construct_option_symbol(ticker, strike_price, option_type, ticker_expiry):
+    expiry = ticker_expiry
     return f"{ticker}{expiry}{strike_price}{option_type}"
 
 
-def construct_nearest_option_symbol(ticker, ltp, option_type):
+def construct_nearest_option_symbol(ticker, ltp, option_type, ticker_expiry):
     # Find the nearest Rs. 10 strike price
     nearest_strike = round(ltp / 10) * 10
     nearest_strike = int(nearest_strike)  # Ensure nearest_strike is an integer
-    expiry = "24JUL2024"  # Update to the correct expiry date
+    expiry = ticker_expiry
     return f"{ticker}{expiry}{nearest_strike}{option_type}"
 
 
-def update_positions(kite,ticker):
+def update_positions(kite, ticker):
     try:
         positions = kite.positions()["day"]
         for position in positions:
@@ -82,13 +82,3 @@ def getTickSize(instrument_df, symbol):
         return instrument_df[instrument_df.tradingsymbol == symbol].tick_size.values[0]
     except:
         return -1
-
-
-def get_initial_price(kite, exchange, ticker):
-    # Wait until 9:29 AM to fetch the initial price
-    target_time = "09:29"
-    while True:
-        current_time = time.strftime("%H:%M")
-        if current_time == target_time:
-            return kite.ltp(exchange + ':' + ticker)[exchange + ':' + ticker]['last_price']
-        time.sleep(1)
