@@ -50,14 +50,14 @@ First, the current price for the ticker is fetched. After which the data will be
 Even values from the sheet will be taken as nearest entry level based on the starting ticker price fetched. 
 Take the above and below even numbers as target and stop loss point based on the even value selected. 
 
-Once the ticker price is reaches or touches the value of the targeted even level value the put value sells the lot selected and make the odd above value of the targeted value as target and below odd value of the targeted value as stop loss and make a purchase of any nearest Rs. 10 call value of the ticker. 
+Once the ticker price is reaches or touches the value of the targeted even level value the put value sells the lot selected and make the odd above value of the targeted value as target and below odd value of the targeted value as stop loss and make a purchase of any nearest Rs. 10 put value of the ticker. 
 
-If the ticker price is reaches or touches the value of the stop loss even level value and is below the entry start value the call value sells the lot selected and make the odd below value as target and above odd value as stop loss and make a purchase of any nearest Rs. 10 put value of the ticker. 
+If the ticker price is reaches or touches the value of the stop loss even level value and is below the entry start value the call value sells the lot selected and make the odd below value as target and above odd value as stop loss and make a purchase of any nearest Rs. 10 call value of the ticker. 
 
 Below scenario as loop (Check the price every 3 minutes):
-"wait until the current price reaches the targeted even numbers and stop loss point based on the even value captured. Once the ticker price is reaches or touches the value of the targeted even level value the put value sells the lot selected and make the odd above value of the targeted value as target and below odd value of the targeted value as stop loss and make a purchase of any nearest Rs. 10 call value of the ticker. 
+"wait until the current price reaches the targeted even numbers and stop loss point based on the even value captured. Once the ticker price is reaches or touches the value of the targeted even level value the put value sells the lot selected and make the odd above value of the targeted value as target and below odd value of the targeted value as stop loss and make a purchase of any nearest Rs. 10 put value of the ticker. 
 
-If the  ticker price is reaches or touches the value of the stop loss even level value and is below the entry start value the call value sells the lot selected and make the odd below value as target and above odd value as stop loss and make a purchase of any nearest Rs. 10 put value of the ticker."
+If the  ticker price is reaches or touches the value of the stop loss even level value and is below the entry start value the call value sells the lot selected and make the odd below value as target and above odd value as stop loss and make a purchase of any nearest Rs. 10 call value of the ticker."
 
 
 
